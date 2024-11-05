@@ -10,4 +10,27 @@ from itemadapter import ItemAdapter
 
 class BookscraperPipeline:
     def process_item(self, item, spider):
+        
+        adapter = ItemAdapter(item)
+
+        #strip whitespaces from strings
+        field_names = adapter.field_names()
+        for field_name in field_names:
+            if field_name != 'description':
+                value = adapter.get(field_name)
+                adapter[field_name] = value.strip()
+
+        ##turn fields into lowercase
+        lowercase_keys = ['category', 'product_type']
+        for lowercase_key in lowercase_keys:
+            value = adapter.get(lowercase_key)
+            adapter[lowercase_key] = value.lower()
+
+        ##turn price into float
+        price_keys = ['price']
+        for price_key in price_keys:
+            value = adapter.get(price_key)
+            value = value.replace('£', '')
+            adapter[price_key] = float(value)
+
         return item
