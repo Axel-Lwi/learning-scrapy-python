@@ -33,4 +33,35 @@ class BookscraperPipeline:
             value = value.replace('£', '')
             adapter[price_key] = float(value)
 
+        ## availbility to int
+        stock_string = adapter.get('stock')
+        split_string_array = stock_string.split('(')
+        if len(split_string_array) > 2:
+            adapter('stock') = 0
+        else:
+            stock_array = split_string_array[1].split(' ')
+            adapter('stock') = int(stock_array[0])
+
+        ## review to number(int)
+        reviews_string = adapter.get('reviews')
+        reviews_array = reviews_string.split(' ')
+        adapter('reviews') = int(reviews_array[0])
+
+        ## rating to number int
+        rating_string = adapter.get('rating')
+        split_rating_array = rating_string.split(' ')
+        rating_text_value = split_rating_array[1].lower()
+        if rating_text_value == 'zero':
+            adapter['rating'] = 0
+        elif rating_text_value == 'one':
+            adapter['rating'] = 1
+        elif rating_text_value == 'two':
+            adapter['rating'] = 2
+        elif rating_text_value == 'three':
+            adapter['rating'] = 3
+        elif rating_text_value == 'four':
+            adapter['rating'] = 4
+        elif rating_text_value == 'five':
+            adapter['rating'] = 5
+
         return item
