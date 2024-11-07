@@ -7,10 +7,40 @@
 # useful for handling different item types with a single interface
 from itemadapter import ItemAdapter
 
+import psycopg2
+
 
 class BookscraperPipeline:
-    def process_item(self, item, spider):
+    def __init__(self):
+        ## Connection Details
+        hostname = 'localhost'
+        username = 'postgres'
+        password = 'postgres' # your password
+        database = 'scrapy'
+
+    ## Create/Connect to database
+        self.connection = psycopg2.connect(host=hostname, user=username, password=password, dbname=database)
         
+    ## Create cursor, used to execute commands
+        self.cur = self.connection.cursor()
+
+    ## Create quotes table if none exists
+        self.cur.execute("""
+        CREATE TABLE IF NOT EXISTS scrapy(
+            id serial PRIMARY KEY, 
+            url text,
+            title text,
+            price float,
+            product_type text,
+            stock int,
+            rating int,
+            category text,
+            reviews int,
+            description text
+        )
+        """)    
+
+    def process_item(self, item, spider):
         adapter = ItemAdapter(item)
 
         #strip whitespaces from strings
@@ -18,7 +48,7 @@ class BookscraperPipeline:
         for field_name in field_names:
             if field_name != 'description':
                 value = adapter.get(field_name)
-                adapter[field_name] = value.strip()
+                adapter[field_name] = value[0].strip()
 
         ##turn fields into lowercase
         lowercase_keys = ['category', 'product_type']
@@ -37,15 +67,15 @@ class BookscraperPipeline:
         stock_string = adapter.get('stock')
         split_string_array = stock_string.split('(')
         if len(split_string_array) > 2:
-            adapter('stock') = 0
+            adapter['stock'] = 0
         else:
             stock_array = split_string_array[1].split(' ')
-            adapter('stock') = int(stock_array[0])
+            adapter['stock'] = int(stock_array[0])
 
         ## review to number(int)
         reviews_string = adapter.get('reviews')
         reviews_array = reviews_string.split(' ')
-        adapter('reviews') = int(reviews_array[0])
+        adapter['reviews'] = int(reviews_array[0])
 
         ## rating to number int
         rating_string = adapter.get('rating')
@@ -63,5 +93,29 @@ class BookscraperPipeline:
             adapter['rating'] = 4
         elif rating_text_value == 'five':
             adapter['rating'] = 5
+    
+        
+        ## Define insert statement
+        self.cur.execute(""" insert into scrapy (url, title, price, product_type, stock, rating, category, reviews, description) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
+        """, (
+            item.get("url", None),
+            item.get("title", None),
+            item.get("price", None),
+            item.get("product_type", None),
+            item.get("stock", None),
+            item.get("rating", None),
+            item.get("category", None),
+            item.get("reviews", None),
+            item.get("description", None)
+        ))
+
+        ## Execute insert of data into database
+        self.connection.commit()
 
         return item
+    
+    def close_spider(self, spider):
+
+        ## Close cursor & connection to database 
+        self.cur.close()
+        self.connection.close()

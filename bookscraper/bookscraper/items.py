@@ -20,8 +20,9 @@ class BookItem(scrapy.Item):
     title = scrapy.Field()
     price = scrapy.Field(serializer = seriealize_price)
     product_type = scrapy.Field()
+    stock = scrapy.Field()
     rating = scrapy.Field()
     category = scrapy.Field()
-    stock = scrapy.Field()
-    description = scrapy.Field()
     reviews = scrapy.Field()
+    description = scrapy.Field()
+    
